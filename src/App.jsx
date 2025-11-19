@@ -1,10 +1,34 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import Home from './pages/Home'
-
+import { useState } from "react";
+import { BrowserRouter } from "react-router-dom";
+import AppRoutes from "./routes/AppRoutes";
+import MenuButton from "./components/MenuButton";
+import Sidebar from "./components/SideBar";
+import { GlobalStyle  } from "./globalStyle";
 function App() {
-  return <Home/>
+  const [showMenuButton, setShowMenuButton] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  function handleMenuClick() {
+    setShowMenuButton(false);
+    setSidebarOpen(true);
+  }
+
+  function handleSidebarClose() {
+    setSidebarOpen(false);
+    setShowMenuButton(true);
+  }
+
+  return (
+
+      <BrowserRouter>
+            <GlobalStyle/>
+
+        {showMenuButton && <MenuButton onClick={handleMenuClick} />}
+        <Sidebar open={sidebarOpen} onClose={handleSidebarClose} />
+        <AppRoutes />
+      </BrowserRouter>
+
+  );
 }
 
-export default App
+export default App;
