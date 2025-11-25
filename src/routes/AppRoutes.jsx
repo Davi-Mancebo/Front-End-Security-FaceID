@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import Home from "../pages/Home";
-import Analysis from "../pages/Analysis/index";
-import PinCode from "../pages/PinCode/index";
+import Analysis from "../pages/Analysis";
+import PinCode from "../pages/PinCode";
 
 
 export default function AppRoutes() {

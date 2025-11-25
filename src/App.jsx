@@ -13,7 +13,7 @@ function App() {
     setSidebarOpen(true);
   }
 
-  function handleSidebarClose() {
+  function handleSidebarClose() {W
     setSidebarOpen(false);
     setShowMenuButton(true);
   }
