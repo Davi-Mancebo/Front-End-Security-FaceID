@@ -20,10 +20,12 @@ import {
 export default function Analysis({ analises: initialAnalises, onBack }) {
   const [expandedId, setExpandedId] = useState(null);
   const [analises, setAnalises] = useState(initialAnalises || []);
+  const [loading, setLoading] = useState(true);
 
   const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8080";
 
   useEffect(() => {
+    console.log("Analysis page mounted - fetching from:", `${API_BASE}/analises`);
     async function load() {
       try {
         const resp = await fetch(`${API_BASE}/analises`);
@@ -33,8 +35,11 @@ export default function Analysis({ analises: initialAnalises, onBack }) {
         }
 
         const data = await resp.json();
+        console.log("GET /analises response:", data);
         if (Array.isArray(data) && data.length > 0) {
           const normalized = data.map((a) => {
+            console.log("Processando análise:", a);
+            
             const dispositivo =
               (a.dispositivo && (a.dispositivo.nome || a.dispositivo)) ||
               a.device ||
@@ -43,13 +48,24 @@ export default function Analysis({ analises: initialAnalises, onBack }) {
 
             let foto =
               a.foto ||
+              a.imagemBase64 ||
               (a.imagem && (a.imagem.url || a.imagem.nome || a.imagem.path || a.imagem.base64)) ||
               a.imageUrl ||
+              a.base64 ||
               null;
 
-            if (foto && typeof foto === "string" && foto.startsWith("/")) {
+            console.log("Foto original:", foto);
+
+            // Se for base64 sem o prefixo data:image, adiciona
+            if (foto && typeof foto === "string" && !foto.startsWith("data:") && !foto.startsWith("http") && !foto.startsWith("/")) {
+              foto = `data:image/jpeg;base64,${foto}`;
+            }
+            // Only prefix with API_BASE for relative paths
+            else if (foto && typeof foto === "string" && !foto.startsWith("data:") && !foto.startsWith("http") && foto.startsWith("/")) {
               foto = `${API_BASE}${foto}`;
             }
+
+            console.log("Foto final:", foto);
 
             return {
               id: a.id || a._id || a.analiseId,
@@ -59,6 +75,8 @@ export default function Analysis({ analises: initialAnalises, onBack }) {
               suspeito:
                 typeof a.suspeito !== "undefined"
                   ? a.suspeito
+                  : typeof a.status !== "undefined"
+                  ? a.status
                   : !!a.suspeitoAnalise || !!a.suspeitoResultado,
             };
           });
@@ -67,6 +85,8 @@ export default function Analysis({ analises: initialAnalises, onBack }) {
         }
       } catch (err) {
         console.warn("Erro ao buscar análises", err);
+      } finally {
+        setLoading(false);
       }
     }
 
@@ -77,32 +97,6 @@ export default function Analysis({ analises: initialAnalises, onBack }) {
     setExpandedId(expandedId === id ? null : id);
   };
 
-  const mock = [
-    {
-      id: 1,
-      tipo: "Reconhecimento Facial",
-      dispositivo: "iPhone 13",
-      foto: "https://picsum.photos/300/200?random=1",
-      suspeito: false,
-    },
-    {
-      id: 2,
-      tipo: "Análise de Acessos",
-      dispositivo: "Notebook Dell",
-      foto: "https://picsum.photos/300/200?random=2",
-      suspeito: true,
-    },
-    {
-      id: 3,
-      tipo: "Tentativa de Login",
-      dispositivo: "Samsung A52",
-      foto: "https://picsum.photos/300/200?random=3",
-      suspeito: true,
-    },
-  ];
-
-  const data = analises?.length > 0 ? analises : mock;
-
   return (
     <Page>
       <Header onClick={onBack}>← Voltar</Header>
@@ -110,14 +104,20 @@ export default function Analysis({ analises: initialAnalises, onBack }) {
       <Content>
         <h2>Análises</h2>
 
-        {analises && analises.length === 0 && (
+        {loading && (
+          <EmptyMessage>
+            Carregando<span>.</span><span>.</span><span>.</span>
+          </EmptyMessage>
+        )}
+
+        {!loading && analises && analises.length === 0 && (
           <>
             <EmptyMessage>Nenhuma análise encontrada.</EmptyMessage>
             <BackButton onClick={onBack}>Voltar</BackButton>
           </>
         )}
 
-        {data.map((item) => (
+        {!loading && analises.map((item) => (
           <Item key={item.id} onClick={() => toggle(item.id)}>
             <Row>
               <Thumb>

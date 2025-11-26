@@ -103,6 +103,25 @@ export const EmptyMessage = styled.div`
   text-align: center;
   color: #777;
   margin-top: 40px;
+  font-size: 18px;
+
+  @keyframes blink {
+    0%, 20% { opacity: 0; }
+    40% { opacity: 1; }
+    100% { opacity: 1; }
+  }
+
+  span:nth-child(1) {
+    animation: blink 1.4s infinite;
+  }
+
+  span:nth-child(2) {
+    animation: blink 1.4s infinite 0.2s;
+  }
+
+  span:nth-child(3) {
+    animation: blink 1.4s infinite 0.4s;
+  }
 `;
 
 export const BackButton = styled.button`

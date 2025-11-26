@@ -2,12 +2,13 @@ import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import CameraScreen from "../../components/FaceMask";
 import VerifyButton from "../../components/VerifyButton";
+import Toast from "../../components/Toast";
 import { Page, Camera, ButtonWrapper, PreviewWrapper } from "./styles";
 
 export default function Home() {
   const webcamRef = useRef(null);
-  const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState(null);
   const navigate = useNavigate();
 
   const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8080";
@@ -40,17 +41,31 @@ export default function Home() {
       });
 
       if (!resp.ok) {
-        const txt = await resp.text();
-        throw new Error(`Upload falhou: ${resp.status} ${txt}`);
+        if (resp.status >= 500) {
+          throw new Error("Erro no servidor. Tente novamente mais tarde.");
+        } else if (resp.status === 400) {
+          throw new Error("Dados inválidos. Verifique a imagem e tente novamente.");
+        } else if (resp.status === 404) {
+          throw new Error("Serviço não encontrado. Verifique a configuração.");
+        } else {
+          const txt = await resp.text();
+          throw new Error(txt || "Erro ao processar a solicitação.");
+        }
       }
 
       const data = await resp.json();
       console.log("POST /analises/upload response:", data);
-      navigate("/admin/analysis");
+      setToast({ message: "Foto enviada com sucesso!", type: "success" });
       return data;
     } catch (err) {
       console.error(err);
-      alert("Erro ao enviar análise: " + err.message);
+      
+      // Trata erros de rede específicos
+      if (err.name === "TypeError" && err.message.includes("fetch")) {
+        setToast({ message: "Servidor fora do ar. Verifique sua conexão.", type: "error" });
+      } else {
+        setToast({ message: err.message, type: "error" });
+      }
       throw err;
     }
   }
@@ -61,10 +76,9 @@ export default function Home() {
     const imgBase64 = webcamRef.current.getScreenshot();
     if (!imgBase64) {
       setLoading(false);
+      setToast({ message: "Erro ao capturar imagem da câmera", type: "error" });
       return;
     }
-
-    setPreview(imgBase64);
 
     const blob = await (await fetch(imgBase64)).blob();
     const file = new File([blob], "selfie.jpg", { type: "image/jpeg" });
@@ -91,10 +105,12 @@ export default function Home() {
 
       <CameraScreen />
 
-      {preview && (
-        <PreviewWrapper>
-          <img src={preview} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        </PreviewWrapper>
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
 
       <ButtonWrapper>
