@@ -9,7 +9,7 @@ export const Page = styled.div`
 `;
 
 export const Header = styled.div`
-  padding: 18px 20px;
+  padding: 80px 20px 18px 20px;
   display: flex;
   align-items: center;
   color: white;

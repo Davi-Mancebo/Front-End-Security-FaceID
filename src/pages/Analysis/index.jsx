@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { AiOutlineWarning, AiOutlineCheck } from "react-icons/ai";
 import {
   Page,
@@ -17,7 +18,8 @@ import {
   BackButton,
 } from "./styles";
 
-export default function Analysis({ analises: initialAnalises, onBack }) {
+export default function Analysis({ analises: initialAnalises }) {
+  const navigate = useNavigate();
   const [expandedId, setExpandedId] = useState(null);
   const [analises, setAnalises] = useState(initialAnalises || []);
   const [loading, setLoading] = useState(true);
@@ -25,7 +27,6 @@ export default function Analysis({ analises: initialAnalises, onBack }) {
   const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8080";
 
   useEffect(() => {
-    console.log("Analysis page mounted - fetching from:", `${API_BASE}/analises`);
     async function load() {
       try {
         const resp = await fetch(`${API_BASE}/analises`);
@@ -35,49 +36,24 @@ export default function Analysis({ analises: initialAnalises, onBack }) {
         }
 
         const data = await resp.json();
-        console.log("GET /analises response:", data);
         if (Array.isArray(data) && data.length > 0) {
           const normalized = data.map((a) => {
-            console.log("Processando análise:", a);
-            
             const dispositivo =
-              (a.dispositivo && (a.dispositivo.nome || a.dispositivo)) ||
-              a.device ||
-              a.dispositivoNome ||
-              "Desconhecido";
+              a.dispositivo?.nome || a.dispositivo || a.device || a.dispositivoNome || "Desconhecido";
 
-            let foto =
-              a.foto ||
-              a.imagemBase64 ||
-              (a.imagem && (a.imagem.url || a.imagem.nome || a.imagem.path || a.imagem.base64)) ||
-              a.imageUrl ||
-              a.base64 ||
-              null;
+            let foto = a.foto || a.imagemBase64 || a.imagem?.base64 || a.imagem?.url || a.imageUrl || a.base64 || null;
 
-            console.log("Foto original:", foto);
-
-            // Se for base64 sem o prefixo data:image, adiciona
-            if (foto && typeof foto === "string" && !foto.startsWith("data:") && !foto.startsWith("http") && !foto.startsWith("/")) {
+            // Adiciona prefixo data:image se for Base64 puro
+            if (foto && typeof foto === "string" && !foto.startsWith("data:") && !foto.startsWith("http")) {
               foto = `data:image/jpeg;base64,${foto}`;
             }
-            // Only prefix with API_BASE for relative paths
-            else if (foto && typeof foto === "string" && !foto.startsWith("data:") && !foto.startsWith("http") && foto.startsWith("/")) {
-              foto = `${API_BASE}${foto}`;
-            }
-
-            console.log("Foto final:", foto);
 
             return {
               id: a.id || a._id || a.analiseId,
               tipo: a.tipo || a.type || "Reconhecimento Facial",
               dispositivo,
               foto,
-              suspeito:
-                typeof a.suspeito !== "undefined"
-                  ? a.suspeito
-                  : typeof a.status !== "undefined"
-                  ? a.status
-                  : !!a.suspeitoAnalise || !!a.suspeitoResultado,
+              suspeito: a.suspeito ?? a.status ?? false,
             };
           });
 
@@ -91,7 +67,7 @@ export default function Analysis({ analises: initialAnalises, onBack }) {
     }
 
     load();
-  }, []);
+  }, [API_BASE]);
 
   const toggle = (id) => {
     setExpandedId(expandedId === id ? null : id);
@@ -99,7 +75,7 @@ export default function Analysis({ analises: initialAnalises, onBack }) {
 
   return (
     <Page>
-      <Header onClick={onBack}>← Voltar</Header>
+      <Header onClick={() => navigate("/")}>← Voltar</Header>
 
       <Content>
         <h2>Análises</h2>
@@ -111,10 +87,7 @@ export default function Analysis({ analises: initialAnalises, onBack }) {
         )}
 
         {!loading && analises && analises.length === 0 && (
-          <>
-            <EmptyMessage>Nenhuma análise encontrada.</EmptyMessage>
-            <BackButton onClick={onBack}>Voltar</BackButton>
-          </>
+          <EmptyMessage>Nenhuma análise encontrada.</EmptyMessage>
         )}
 
         {!loading && analises.map((item) => (
@@ -138,7 +111,25 @@ export default function Analysis({ analises: initialAnalises, onBack }) {
 
             {expandedId === item.id && (
               <ExpandedArea>
-                <Photo src={item.foto} />
+                {item.foto ? (
+                  <>
+                    <Photo 
+                      src={item.foto} 
+                      alt="Foto da análise"
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                        e.target.nextSibling.style.display = "block";
+                      }}
+                    />
+                    <div style={{ display: "none", padding: "20px", textAlign: "center", color: "#f44" }}>
+                      ❌ Erro ao carregar imagem
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ padding: "20px", textAlign: "center", color: "#999" }}>
+                    📷 Imagem não disponível
+                  </div>
+                )}
               </ExpandedArea>
             )}
           </Item>

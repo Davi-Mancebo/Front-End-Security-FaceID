@@ -39,42 +39,33 @@ src/
 └── globalStyle.js     # Estilos globais
 ```
 
-## ⚙️ Configuração e Instalação
+## ⚙️ Instalação e Uso
 
 ### Pré-requisitos
 
 - Node.js 18+ 
-- npm ou yarn
-- Backend rodando na porta 8080 (ou configurar variável de ambiente)
+- Backend rodando na porta 8080
 
-### Instalação
+### Configuração
 
-1. Clone o repositório:
+1. Clone e instale:
 ```bash
 git clone https://github.com/Davi-Mancebo/Front-End-Security-FaceID.git
 cd Front-End-Security-FaceID
-```
-
-2. Instale as dependências:
-```bash
 npm install
 ```
 
-3. Configure a URL do backend (opcional):
+2. **(Opcional)** Configure URL do backend:
 ```bash
-# Crie um arquivo .env na raiz do projeto
 echo "VITE_API_BASE=http://localhost:8080" > .env
 ```
 
-4. Inicie o servidor de desenvolvimento:
+3. Inicie o projeto:
 ```bash
 npm run dev
 ```
 
-5. Acesse no navegador:
-```
-http://localhost:5173
-```
+Acesse: `http://localhost:5173`
 
 ## 🔌 Integração com Backend
 
@@ -82,43 +73,12 @@ O frontend espera que o backend esteja disponível em `http://localhost:8080` po
 
 ### Endpoints Utilizados
 
-**POST** `/analises/upload`
-- Envia foto capturada e informações do dispositivo
-- Content-Type: `multipart/form-data`
-- Campos:
-  - `image` / `imagem`: Arquivo da foto (JPEG)
-  - `dispositivo`: String com informações do dispositivo
-- Resposta esperada:
-```json
-{
-  "data": { "id": 1, "..." },
-  "message": "Análise criada com sucesso"
-}
-```
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| POST | `/analises/upload` | Envia foto (multipart/form-data)<br>Campos: `imagem` (file), `dispositivo` (string) |
+| GET | `/analises` | Retorna array com `id`, `dispositivo`, `imagemBase64`, `status` |
 
-**GET** `/analises`
-- Retorna lista de análises realizadas
-- Resposta esperada:
-```json
-[
-  {
-    "id": 1,
-    "dispositivo": "Android (mobile) — Chrome",
-    "imagemBase64": "/9j/4AAQSkZJRg...",
-    "status": false,
-    "createdAt": "2025-11-26T16:54:53.799501",
-    "updatedAt": "2025-11-26T16:54:53.799501"
-  }
-]
-```
-
-### Variáveis de Ambiente
-
-Crie um arquivo `.env` na raiz do projeto:
-
-```env
-VITE_API_BASE=http://localhost:8080
-```
+**Formato esperado do `imagemBase64`**: String Base64 pura (sem prefixo `data:image`)
 
 ## 🎯 Funcionalidades
 
@@ -184,9 +144,8 @@ npm run preview
 - Confirme a URL configurada em `VITE_API_BASE`
 - Verifique o CORS no backend (deve permitir `http://localhost:5173`)
 
-### Imagens não aparecem na lista
-- Verifique o formato do campo `imagemBase64` retornado pelo backend
-- Deve ser uma string base64 (sem o prefixo `data:image/jpeg;base64,`)
+### Imagens não aparecem
+- Backend deve retornar `imagemBase64` como string Base64 pura (sem prefixo)
 
 ## 📄 Licença
 

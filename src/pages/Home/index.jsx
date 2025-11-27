@@ -30,10 +30,8 @@ export default function Home() {
   async function uploadAnalysis(file, device) {
     try {
       const form = new FormData();
-      form.append("image", file);
       form.append("dispositivo", device);
       form.append("imagem", file);
-      form.append("image", file);
 
       const resp = await fetch(`${API_BASE}/analises/upload`, {
         method: "POST",
@@ -54,7 +52,6 @@ export default function Home() {
       }
 
       const data = await resp.json();
-      console.log("POST /analises/upload response:", data);
       setToast({ message: "Foto enviada com sucesso!", type: "success" });
       return data;
     } catch (err) {
@@ -82,12 +79,6 @@ export default function Home() {
 
     const blob = await (await fetch(imgBase64)).blob();
     const file = new File([blob], "selfie.jpg", { type: "image/jpeg" });
-
-    console.log({
-      nome: file.name,
-      tamanhoKB: (file.size / 1024).toFixed(2),
-      tipo: file.type,
-    });
 
     try {
       const device = getDeviceInfo();
