@@ -13,6 +13,34 @@ export default function Home() {
 
   const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8080";
 
+  // Comprime a imagem para reduzir tamanho do upload
+  function compressImage(base64Image, maxWidth = 800, maxHeight = 600, quality = 0.75) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+
+        // Calcula novo tamanho mantendo proporção
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width *= ratio;
+          height *= ratio;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Exporta com qualidade reduzida
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = base64Image;
+    });
+  }
+
   function getDeviceInfo() {
     try {
       if (navigator.userAgentData) {
@@ -77,7 +105,9 @@ export default function Home() {
       return;
     }
 
-    const blob = await (await fetch(imgBase64)).blob();
+    // Comprime a imagem antes de enviar
+    const compressedBase64 = await compressImage(imgBase64);
+    const blob = await (await fetch(compressedBase64)).blob();
     const file = new File([blob], "selfie.jpg", { type: "image/jpeg" });
 
     try {
