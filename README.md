@@ -85,6 +85,7 @@ O frontend espera que o backend esteja disponível em `http://localhost:8080` po
 ### Página Inicial (Home)
 - Captura de foto via webcam
 - Detecção automática de informações do dispositivo
+- Compressão automática das imagens capturadas (redimensiona para 800x600 e qualidade 75%)
 - Upload automático para análise
 - Notificações de sucesso/erro
 
@@ -98,6 +99,15 @@ O frontend espera que o backend esteja disponível em `http://localhost:8080` po
 ### Menu Lateral
 - Navegação rápida entre páginas
 - Acesso à área administrativa
+
+## ⚙️ Configurações
+
+| Configuração | Local | Descrição |
+|--------------|-------|-----------|
+| `VITE_API_BASE` | `.env` | URL base do backend (padrão `http://localhost:8080`) |
+| `senhaCorreta` | `src/pages/PinCode/index.jsx` | PIN de acesso administrativo (alterar para produção ou buscar de uma API segura) |
+
+> **Dica:** O backend deve retornar `imagemBase64` como string pura. O frontend já adiciona o prefixo `data:image/jpeg;base64,` quando necessário.
 
 ## 🎨 Personalização
 
@@ -146,6 +156,7 @@ npm run preview
 
 ### Imagens não aparecem
 - Backend deve retornar `imagemBase64` como string Base64 pura (sem prefixo)
+- Verifique se a compressão automática está habilitada (padrão) e se o backend aceita arquivos JPEG reduzidos
 
 ## 📄 Licença
 

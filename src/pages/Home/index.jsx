@@ -1,21 +1,19 @@
 import React, { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import CameraScreen from "../../components/FaceMask";
 import VerifyButton from "../../components/VerifyButton";
 import Toast from "../../components/Toast";
-import { Page, Camera, ButtonWrapper, PreviewWrapper } from "./styles";
+import { Page, Camera, ButtonWrapper } from "./styles";
 
 export default function Home() {
   const webcamRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
-  const navigate = useNavigate();
 
   const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8080";
 
   // Comprime a imagem para reduzir tamanho do upload
-  function compressImage(base64Image, maxWidth = 800, maxHeight = 600, quality = 0.75) {
-    return new Promise((resolve) => {
+  function compressImage(base64Image, maxWidth = 1200, maxHeight = 900, quality = 0.92) {
+    return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement("canvas");
@@ -37,6 +35,7 @@ export default function Home() {
         // Exporta com qualidade reduzida
         resolve(canvas.toDataURL("image/jpeg", quality));
       };
+      img.onerror = () => reject(new Error("Falha ao carregar imagem para compressão"));
       img.src = base64Image;
     });
   }
@@ -58,10 +57,10 @@ export default function Home() {
   async function uploadAnalysis(file, device) {
     try {
       const form = new FormData();
-      form.append("dispositivo", device);
-      form.append("imagem", file);
+      form.append("device", device);
+      form.append("image", file);
 
-      const resp = await fetch(`${API_BASE}/analises/upload`, {
+      const resp = await fetch(`${API_BASE}/analyses/upload`, {
         method: "POST",
         body: form,
       });
@@ -98,6 +97,12 @@ export default function Home() {
   const capture = async () => {
     setLoading(true);
 
+    if (!webcamRef.current) {
+      setLoading(false);
+      setToast({ message: "Câmera não inicializada", type: "error" });
+      return;
+    }
+
     const imgBase64 = webcamRef.current.getScreenshot();
     if (!imgBase64) {
       setLoading(false);
@@ -106,9 +111,17 @@ export default function Home() {
     }
 
     // Comprime a imagem antes de enviar
-    const compressedBase64 = await compressImage(imgBase64);
-    const blob = await (await fetch(compressedBase64)).blob();
-    const file = new File([blob], "selfie.jpg", { type: "image/jpeg" });
+    let file;
+    try {
+      const compressedBase64 = await compressImage(imgBase64);
+      const blob = await (await fetch(compressedBase64)).blob();
+      file = new File([blob], "selfie.jpg", { type: "image/jpeg" });
+    } catch (err) {
+      console.error(err);
+      setToast({ message: "Erro ao comprimir a imagem", type: "error" });
+      setLoading(false);
+      return;
+    }
 
     try {
       const device = getDeviceInfo();

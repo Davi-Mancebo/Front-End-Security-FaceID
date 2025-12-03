@@ -99,6 +99,82 @@ export const Photo = styled.img`
   border-radius: 12px;
 `;
 
+export const Details = styled.div`
+  margin-top: 14px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+`;
+
+export const DetailRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+export const DetailLabel = styled.span`
+  color: #7a7a7a;
+`;
+
+export const DetailValue = styled.span`
+  font-weight: 600;
+  color: ${(p) => (p.$suspect ? "#d9534f" : "#2d2d2d")};
+  text-transform: capitalize;
+`;
+
+export const EmotionList = styled.div`
+  margin-top: 16px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.02);
+`;
+
+export const EmotionItem = styled.div`
+  & + & {
+    margin-top: 12px;
+  }
+`;
+
+export const EmotionHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 6px;
+`;
+
+export const EmotionName = styled.span`
+  text-transform: capitalize;
+  color: #4a4a4a;
+`;
+
+export const EmotionScore = styled.span`
+  font-weight: 600;
+  color: #1c1c1c;
+`;
+
+export const EmotionBar = styled.div`
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: #ececec;
+  overflow: hidden;
+`;
+
+export const EmotionBarFill = styled.div`
+  height: 100%;
+  background: linear-gradient(90deg, #4a7dff, #62d5c4);
+`;
+
 export const EmptyMessage = styled.div`
   text-align: center;
   color: #777;

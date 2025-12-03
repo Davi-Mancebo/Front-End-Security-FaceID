@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AiOutlineWarning, AiOutlineCheck } from "react-icons/ai";
+import { normalizeAnalysisList, normalizeImageSource } from "../../utils/analysis";
 import {
   Page,
   Header,
@@ -14,53 +15,51 @@ import {
   Device,
   ExpandedArea,
   Photo,
+  Details,
+  DetailRow,
+  DetailLabel,
+  DetailValue,
+  EmotionList,
+  EmotionItem,
+  EmotionHeader,
+  EmotionName,
+  EmotionScore,
+  EmotionBar,
+  EmotionBarFill,
   EmptyMessage,
-  BackButton,
 } from "./styles";
 
 export default function Analysis({ analises: initialAnalises }) {
   const navigate = useNavigate();
-  const [expandedId, setExpandedId] = useState(null);
-  const [analises, setAnalises] = useState(initialAnalises || []);
-  const [loading, setLoading] = useState(true);
-
   const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8080";
+  const [expandedId, setExpandedId] = useState(null);
+  const [analises, setAnalises] = useState(() => normalizeAnalysisList(initialAnalises || [], API_BASE));
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    setAnalises(normalizeAnalysisList(initialAnalises || [], API_BASE));
+  }, [initialAnalises, API_BASE]);
 
   useEffect(() => {
     async function load() {
       try {
-        const resp = await fetch(`${API_BASE}/analises`);
+        const resp = await fetch(`${API_BASE}/analyses`);
         if (!resp.ok) {
-          console.warn("GET /analises returned status ", resp.status);
+          console.warn("GET /analyses returned status ", resp.status);
+          setError("Falha ao carregar análises. Tente novamente mais tarde.");
+          setAnalises([]);
           return;
         }
 
         const data = await resp.json();
-        if (Array.isArray(data) && data.length > 0) {
-          const normalized = data.map((a) => {
-            const dispositivo =
-              a.dispositivo?.nome || a.dispositivo || a.device || a.dispositivoNome || "Desconhecido";
-
-            let foto = a.foto || a.imagemBase64 || a.imagem?.base64 || a.imagem?.url || a.imageUrl || a.base64 || null;
-
-            // Adiciona prefixo data:image se for Base64 puro
-            if (foto && typeof foto === "string" && !foto.startsWith("data:") && !foto.startsWith("http")) {
-              foto = `data:image/jpeg;base64,${foto}`;
-            }
-
-            return {
-              id: a.id || a._id || a.analiseId,
-              tipo: a.tipo || a.type || "Reconhecimento Facial",
-              dispositivo,
-              foto,
-              suspeito: a.suspeito ?? a.status ?? false,
-            };
-          });
-
-          setAnalises(normalized);
-        }
+        const normalized = normalizeAnalysisList(data, API_BASE);
+        setAnalises(normalized);
+        setError(null);
       } catch (err) {
         console.warn("Erro ao buscar análises", err);
+        setAnalises([]);
+        setError("Não foi possível carregar as análises.");
       } finally {
         setLoading(false);
       }
@@ -69,9 +68,12 @@ export default function Analysis({ analises: initialAnalises }) {
     load();
   }, [API_BASE]);
 
-  const toggle = (id) => {
-    setExpandedId(expandedId === id ? null : id);
-  };
+  const toggle = useCallback(
+    (id) => {
+      setExpandedId((current) => (current === id ? null : id));
+    },
+    []
+  );
 
   return (
     <Page>
@@ -86,54 +88,91 @@ export default function Analysis({ analises: initialAnalises }) {
           </EmptyMessage>
         )}
 
-        {!loading && analises && analises.length === 0 && (
+        {!loading && error && (
+          <EmptyMessage>{error}</EmptyMessage>
+        )}
+
+        {!loading && !error && analises && analises.length === 0 && (
           <EmptyMessage>Nenhuma análise encontrada.</EmptyMessage>
         )}
 
-        {!loading && analises.map((item) => (
-          <Item key={item.id} onClick={() => toggle(item.id)}>
-            <Row>
-              <Thumb>
-                {item.suspeito ? (
-                  <AiOutlineWarning size={26} color="#3A3A3C" />
-                ) : (
-                  <Ellipse>
-                    <AiOutlineCheck size={20} color="#3A3A3C" />
-                  </Ellipse>
-                )}
-              </Thumb>
+        {!loading && !error && (
+          analises.map((item) => {
+            const photoSrc = item.foto ? normalizeImageSource(item.foto, API_BASE) : null;
 
-              <Info>
-                <Title>{item.tipo}</Title>
-                <Device>{item.dispositivo}</Device>
-              </Info>
-            </Row>
+            return (
+              <Item key={item.id} onClick={() => toggle(item.id)}>
+                <Row>
+                  <Thumb>
+                    {item.suspeito ? (
+                      <AiOutlineWarning size={26} color="#3A3A3C" />
+                    ) : (
+                      <Ellipse>
+                        <AiOutlineCheck size={20} color="#3A3A3C" />
+                      </Ellipse>
+                    )}
+                  </Thumb>
 
-            {expandedId === item.id && (
-              <ExpandedArea>
-                {item.foto ? (
-                  <>
-                    <Photo 
-                      src={item.foto} 
-                      alt="Foto da análise"
-                      onError={(e) => {
-                        e.target.style.display = "none";
-                        e.target.nextSibling.style.display = "block";
-                      }}
-                    />
-                    <div style={{ display: "none", padding: "20px", textAlign: "center", color: "#f44" }}>
-                      ❌ Erro ao carregar imagem
-                    </div>
-                  </>
-                ) : (
-                  <div style={{ padding: "20px", textAlign: "center", color: "#999" }}>
-                    📷 Imagem não disponível
-                  </div>
+                  <Info>
+                    <Title>{item.tipo}</Title>
+                    <Device>{item.device || "Unknown device"}</Device>
+                  </Info>
+                </Row>
+
+                {expandedId === item.id && (
+                  <ExpandedArea>
+                    {photoSrc ? (
+                      <>
+                        <Photo
+                          src={photoSrc}
+                          alt="Foto da análise"
+                          onError={(e) => {
+                            e.target.style.display = "none";
+                            e.target.nextSibling.style.display = "block";
+                          }}
+                        />
+                        <div style={{ display: "none", padding: "20px", textAlign: "center", color: "#f44" }}>
+                          ❌ Erro ao carregar imagem
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ padding: "20px", textAlign: "center", color: "#999" }}>
+                        📷 Imagem não disponível
+                      </div>
+                    )}
+
+                    <Details>
+                      <DetailRow>
+                        <DetailLabel>Emoção dominante</DetailLabel>
+                        <DetailValue>{item.dominantEmotion || "—"}</DetailValue>
+                      </DetailRow>
+                      <DetailRow>
+                        <DetailLabel>Status</DetailLabel>
+                        <DetailValue $suspect={item.suspeito}>{item.suspeito ? "Suspeito" : "Aprovado"}</DetailValue>
+                      </DetailRow>
+                    </Details>
+
+                    {item.emotionScores?.length > 0 && (
+                      <EmotionList>
+                        {item.emotionScores.map(({ emotion, score }) => (
+                          <EmotionItem key={emotion}>
+                            <EmotionHeader>
+                              <EmotionName>{emotion}</EmotionName>
+                              <EmotionScore>{`${Math.round((score || 0) * 100)}%`}</EmotionScore>
+                            </EmotionHeader>
+                            <EmotionBar>
+                              <EmotionBarFill style={{ width: `${Math.min(100, Math.max(0, Math.round((score || 0) * 100)))}%` }} />
+                            </EmotionBar>
+                          </EmotionItem>
+                        ))}
+                      </EmotionList>
+                    )}
+                  </ExpandedArea>
                 )}
-              </ExpandedArea>
-            )}
-          </Item>
-        ))}
+              </Item>
+            );
+          })
+        )}
       </Content>
     </Page>
   );

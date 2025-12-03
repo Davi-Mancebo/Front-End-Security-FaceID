@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Page,
@@ -12,11 +12,28 @@ import {
 
 export default function PinCode() {
   const navigate = useNavigate();
+  const timeouts = useRef([]);
 
+  // Idealmente viria de uma API segura ou variável de ambiente
   const senhaCorreta = "123456";
   const [input, setInput] = useState("");
   const [status, setStatus] = useState("normal");
   const [isVerifying, setIsVerifying] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      timeouts.current.forEach(clearTimeout);
+      timeouts.current = [];
+    };
+  }, []);
+
+  function scheduleTimeout(callback, delay) {
+    const id = setTimeout(() => {
+      callback();
+      timeouts.current = timeouts.current.filter((stored) => stored !== id);
+    }, delay);
+    timeouts.current.push(id);
+  }
 
   function handleClick(num) {
     if (input.length < 6 && !isVerifying) {
@@ -35,10 +52,10 @@ export default function PinCode() {
 
     if (input === senhaCorreta) {
       setStatus("green");
-      setTimeout(() => navigate("/admin/analysis"), 800);
+      scheduleTimeout(() => navigate("/admin/analysis"), 800);
     } else {
       setStatus("red");
-      setTimeout(() => limpar(), 700);
+      scheduleTimeout(() => limpar(), 700);
     }
   }
 
@@ -46,7 +63,7 @@ export default function PinCode() {
     if (input.length === 6 && !isVerifying) {
       verificarSenha();
     }
-  }, [input]);
+  }, [input, isVerifying]);
 
   return (
     <Page>
